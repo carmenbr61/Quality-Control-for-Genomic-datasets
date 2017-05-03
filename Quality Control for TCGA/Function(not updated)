@@ -1,0 +1,31 @@
+#Function to get correlation matrix
+#Input:  MultiAssayExperiment object subsetted by the 2 assays with tumor samples only, disjoint copy number ranges (still need to fix this part of the fuction 
+#by using the `Ragged Experiment` class instead of `Ranged Ragged Assay`)
+#Output: Matrix with correlations
+library(MultiAssayExperiment)
+library(TCGAutils)
+library(Biobase)
+library(GenomicFeatures)
+library(Homo.sapiens)
+
+genomicqc<- function(MAE){
+gr.all <- GenomicFeatures::genes(Homo.sapiens, column="SYMBOL")
+seqlevelsStyle(gr.all) <- "NCBI"
+geneLogic <- unname(unlist(mcols(gr.all)[[1]])) %in% rownames(MAE[[1]])
+grSubsettor <- gr.all[geneLogic]
+names(grSubsettor) <- mcols(grSubsettor)[["SYMBOL"]] # adding gene symbols as rownames
+sub <- MAE[[2]][grSubsettor, ]
+sub
+if (sum(isDisjoint(sub)) !=  length(colnames(MAE)[[2]])  ) {
+    sub<- disjoin(sub,mcolname = "Segment_Mean" )
+}
+newSub <- assay(sub, mcolname = "Segment_Mean", ranges = grSubsettor)
+features<- rownames(MAE[[1]]) %in% unname(unlist(mcols(gr.all)[[1]]))
+MAE[[1]] <- MAE[[1]][features, ]
+MAE[[2]] <- newSub
+#Matrices
+Exmatrix<-exprs(MAE[[1]])
+CNmatrix<-assay(MAE[[2]], mcolname = "Segment_Mean")
+correlations<-as.matrix(cor(Exmatrix, CNmatrix, method= "pearson", use = "pairwise.complete.obs"))
+return(correlations)
+}
