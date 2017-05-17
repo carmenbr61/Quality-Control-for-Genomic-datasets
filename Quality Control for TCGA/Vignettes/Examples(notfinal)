@@ -1,0 +1,67 @@
+#EXAMPLES
+#assays(blca_complete)
+
+#--------------Bladder Urothelial Carcinoma----------------
+blca<-readRDS("~/Documents/R-work/blcaMAEO.rds")
+#Subset by assays and tumor samples only
+blca2<-blca[,, c("RNASeqGene", "CNVSNP")]
+cnames<- colnames(blca2)[[1]]
+rnatumoronly<-TCGAsampleSelect(cnames, 01) #56 tumor samples in RNASeqGene
+subsettingList <- list(RNASeqGene = rnatumoronly, CNVSNP = TCGAsampleSelect(colnames(blca2)[[2]], "01"))
+bba <- blca2[, subsettingList, ]
+#[1] RNASeqGene: ExpressionSet with 20502 rows and 56 columns 
+#[2] CNVSNP: RangedRaggedAssay with 79410 rows and 408 columns 
+blca_complete <- bba[, complete.cases(bba), ]#Complete cases only
+#check:  sum(isDisjoint(blca_complete[[2]]))
+corr_blca<-genomicqc(blca_complete)
+plotQC(corr_blca)
+
+# z<-0.5*log((1+corr_blca)/(1-corr_blca)) 
+# plot(density(z)) 
+#--------------Ovarian serous cystadenocarcinoma-------------------
+ov<-readRDS("~/Documents/R-work/ovMAEO.rds")
+ov1<-ov[,, c("RNASeqGene", "CNVSNP")]
+cnames_ov<- colnames(ov1)[[1]]
+rnatumoronly_ov<-TCGAsampleSelect(cnames_ov, 01) 
+subsettingList_ov <- list(RNASeqGene = rnatumoronly_ov, CNVSNP = TCGAsampleSelect(colnames(ov1)[[2]], "01"))
+ov2 <- ov1[, subsettingList_ov, ]
+ov_complete <- ov2[, complete.cases(ov2), ]
+#check:  
+sum(isDisjoint(ov_complete[[2]])) #only 284 disjoint ranges.
+#disjoin the rangedraggedassay
+#sub_ov<- disjoin(ov_complete[[2]],mcolname = "Segment_Mean" )
+corr_ov<- genomicqc(ov_complete)
+plotQC(corr_ov)
+
+
+#--------------Uterine Carcinosarcoma -----------
+download.file("http://s3.amazonaws.com/multiassayexperiments/ucsMAEO.rds", destfile = "~/Documents/R-work/ucsMAEO.rds")
+ucs<-readRDS("~/Documents/R-work/ucsMAEO.rds")
+names(ucs)
+ucs1<-ucs[,, c("RNASeq2GeneNorm", "CNVSNP")]
+cnames_ucs<- colnames(ucs1)[[1]]
+rnatumoronly_ucs<-TCGAsampleSelect(cnames_ucs, 01) #56 tumor samples in RNASeqGene
+subsettingList_ucs <- list(RNASeq2GeneNorm = rnatumoronly_ucs, CNVSNP = TCGAsampleSelect(colnames(ucs1)[[2]], "01"))
+ucs2 <- ucs1[, subsettingList_ucs, ]
+#[1] RNASeq2GeneNorm: ExpressionSet with 20501 rows and 57 columns 
+#[2] CNVSNP: RangedRaggedAssay with 16123 rows and 56 columns 
+ucs_complete <- ucs2[, complete.cases(ucs2), ]#Complete cases only
+#check:  sum(isDisjoint(ucs_complete[[2]]))
+corr_ucs<-genomicqc(ucs_complete)
+plotQC(corr_ucs)
+
+
+#------Breast invasive carcinoma-------
+download.file("http://s3.amazonaws.com/multiassayexperiments/brcaMAEO.rds", destfile = "~/Documents/R-work/brcaMAEO.rds")
+brca<-readRDS("~/Documents/R-work/brcaMAEO.rds")
+names(brca)
+brca1<-brca[,, c("RNASeqGene", "CNVSNP")]
+cnames_brca<- colnames(brca1)[[1]]
+rnatumoronly_brca<-TCGAsampleSelect(cnames_brca, 01) 
+subsettingList_brca <- list(RNASeqGene = rnatumoronly_brca, CNVSNP = TCGAsampleSelect(colnames(brca1)[[2]], "01"))
+brca2 <- ucs1[, subsettingList_ucs, ]
+brca_complete <- brca2[, complete.cases(brca2), ]#Complete cases only
+#check for disjoint ranges:   
+sum(isDisjoint(brca_complete[[2]]))
+corr_brca<-genomicqc(brca_complete)
+plotQC(corr_brca)
