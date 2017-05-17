@@ -1,0 +1,139 @@
+---
+title: "Correlation Checks Across all assays in the Ovarian Cancer dataset"
+author: "Carmen Rodriguez"
+date: "5/10/2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, warning=FALSE, include=FALSE}
+## BiocInstaller::biocLite("RaggedExperiment")
+## BiocInstaller::biocLite("waldronlab/MultiAssayExperiment")
+## BiocInstaller::biocLite("waldronlab/TCGAutils")
+##BiocInstaller::biocLite ("GenomicFeatures")
+##BiocInstaller::biocLite ("Homo.sapiens")
+library(RaggedExperiment)
+library(MultiAssayExperiment)
+library(TCGAutils)
+library(GenomicFeatures)
+library(Homo.sapiens)
+
+if(!file.exists("ovMAEO.rds")){
+  download.file("http://s3.amazonaws.com/multiassayexperiments/ovMAEO.rds", destfile = "ovMAEO.rds")
+}
+ov<-readRDS("ovMAEO.rds")
+ov<-updateObject(ov)
+```
+
+#Correlation between ExpressionSets
+
+```{r "RNASeqGene and RNASeq2GeneNorm", echo=FALSE, message=FALSE, warning=FALSE, r echo=FALSE}
+#----------------RNASeqGene and RNASeq2GeneNorm------------
+ov1<-ov[,, c("RNASeqGene", "RNASeq2GeneNorm")]
+#Should expect:
+    #[1] RNASeqGene: ExpressionSet with 19990 rows and 299 columns 
+   #[2] RNASeq2GeneNorm: ExpressionSet with 20501 rows and 307 columns 
+#Subsetting by primary solid tumor samples (for now)
+cnames<- colnames(ov1)[[1]]
+cnames2<- colnames(ov1)[[2]]
+rnatumoronly<-TCGAsampleSelect(cnames, 01)
+rnatumoronly2<-TCGAsampleSelect(cnames2, 01)
+subsettingList <- list(RNASeqGene = rnatumoronly, RNASeq2GeneNorm = rnatumoronly2)
+ov2 <- ov1[, subsettingList, ] #only primary solid tumor samples
+#[1] RNASeqGene: ExpressionSet with 19990 rows and 295 columns 
+#[2] RNASeq2GeneNorm: ExpressionSet with 20501 rows and 303 columns 
+#Finding feature intersection between these two assays--> We need same features(gene symbols) and columns (samples)
+ov3 <- intersectColumns(ov2)
+ov3<-intersectRows(ov3)
+    # [1] RNASeqGene: ExpressionSet with 19721 rows and 293 columns 
+    # [2] RNASeq2GeneNorm: ExpressionSet with 19721 rows and 293 columns 
+rownames(ov3) #in same order 
+#MATRICES WITH EXPRESSION VALUES
+ov3a <- assays(ov3)
+#HISTOGRAM OF CORRELATIONS
+#Original intensity domain
+a<-ov3a[[1]]
+b<-ov3a[[2]]
+Correlations<-cor(b,b)
+hist(Correlations, main = "RNASeqGene v. RNASeq2GeneNorm")
+
+#Plots in log2-domain
+loga<-log2(a + 1)
+logb<-log2(b + 1)
+log2Correlations<- cor (loga, logb)
+hist(log2Correlations, main = "RNASeqGene v. RNASeq2GeneNorm")
+```
+```{r "RNASeqGene and mRNAArray", echo=FALSE, message=FALSE, warning=FALSE}
+ov1<-ov[,, c("RNASeqGene", "mRNAArray")]
+cnames<- colnames(ov1)[[1]]
+cnames2<- colnames(ov1)[[2]]
+rnatumoronly<-TCGAsampleSelect(cnames, 01)
+rnatumoronly2<-TCGAsampleSelect(cnames2, 01)
+subsettingList <- list(RNASeqGene = rnatumoronly, mRNAArray = rnatumoronly2)
+ov2 <- ov1[, subsettingList, ]
+ov3 <- intersectColumns(ov2)
+ov3<-intersectRows(ov3)
+#Matrices 
+ov3a <- assays(ov3)
+a<-ov3a[[1]]
+b<-ov3a[[2]]
+
+Correlations<-cor(a,b)
+hist(Correlations,main = "RNASeqGene v. mRNAArray")
+#Plots in log2-domain
+loga<-log2(a + 1)
+logb<-log2(b + 1)
+log2Correlations<- cor ( loga, logb)
+hist(log2Correlations, main = "RNASeqGene v. mRNAArray")
+```
+```{r "RNASeq2GeneNorm and mRNAArray", echo=FALSE, message=FALSE, warning=FALSE}
+ov1<-ov[,, c("RNASeq2GeneNorm", "mRNAArray")]
+cnames<- colnames(ov1)[[1]]
+cnames2<- colnames(ov1)[[2]]
+rnatumoronly<-TCGAsampleSelect(cnames, 01)
+rnatumoronly2<-TCGAsampleSelect(cnames2, 01)
+subsettingList <- list(RNASeq2GeneNorm = rnatumoronly, mRNAArray = rnatumoronly2)
+ov2 <- ov1[, subsettingList, ]
+ov3 <- intersectColumns(ov2)
+ov3<-intersectRows(ov3)
+#Matrices 
+ov3a <- assays(ov3)
+a<-ov3a[[1]]
+b<-ov3a[[2]]
+
+Correlations<-cor(a,b)
+hist(Correlations,main = "RNASeq2GeneNorm v. mRNAArray")
+#Plots in log2-domain
+loga<-log2(a + 1)
+logb<-log2(b + 1)
+log2Correlations<- cor ( loga, logb)
+hist(log2Correlations, main = "RNASeq2GeneNorm v. mRNAArray")
+```
+
+#Correlations between Copy number and Expression data assays
+```{r CNVSNP/CNASNP and mRNAArray, echo=FALSE, message=FALSE, warning=FALSE}
+ov1<-ov[,, c("mRNAArray", "CNVSNP")]
+cnames<- colnames(ov1)[[1]]
+rnatumoronly<-TCGAsampleSelect(cnames, 01)
+subsettingList<- list(mRNAArray = rnatumoronly, CNVSNP = TCGAsampleSelect(colnames(ov1)[[2]], "01"))
+ov2 <- ov1[, subsettingList, ]
+ov3 <- intersectColumns(ov2) #same number of samples
+#Find gene intersection between these two assays--same number of features and columns !
+#Need to find the corresponding names for the copy number ranges -so that the rows are the gene names and the columns are the samples(participants)
+gr.all = genes(Homo.sapiens, column="SYMBOL")
+seqlevelsStyle(gr.all) <- "NCBI"
+geneLogic<- unname(unlist(mcols(gr.all)[[1]])) %in% rownames(ov3[[1]])
+grSubsettor<- gr.all[geneLogic]
+names(grSubsettor) <- mcols(grSubsettor)[["SYMBOL"]] # adding gene symbols as rownames
+
+#Disjoint ranges --use disjoinAssay 
+
+
+
+
+
+
